@@ -426,29 +426,6 @@ pub fn simulate_gains_window(
     })
 }
 
-pub fn logits(z: &[f64], ids: &[u64], seed: u64) -> Vec<f64> {
-    assert_eq!(z.len(), ids.len());
-    (0..1496)
-        .map(|label| {
-            z.iter()
-                .zip(ids)
-                .map(|(&x, &id)| {
-                    let sign = if mix(seed ^ id ^ (label as u64).wrapping_mul(0xd1342543de82ef95))
-                        & 1
-                        == 0
-                    {
-                        1.0
-                    } else {
-                        -1.0
-                    };
-                    sign * x
-                })
-                .sum::<f64>()
-                / (z.len() as f64).sqrt()
-        })
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,4 +1,3 @@
-import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { ReadOnlyBoard } from '../vendor/shogilens/ReadOnlyBoard';
@@ -14,7 +13,7 @@ const metrics=getBoardLayoutMetrics();
 const appearance=getBoardAppearance('standard');
 const pieceNames:Record<string,string>={P:'Pawn',L:'Lance',N:'Knight',S:'Silver',G:'Gold',B:'Bishop',R:'Rook',K:'King','+P':'Promoted pawn','+L':'Promoted lance','+N':'Promoted knight','+S':'Promoted silver','+B':'Horse','+R':'Dragon'};
 let current:any=null,selected:string|null=null,blocked=false;
-let onSquare=(square:string)=>{},onHand=(piece:string,color:string)=>{};
+let onSquare: (square:string)=>void = ()=>{},onHand: (piece:string,color:string)=>void = ()=>{};
 function square(usi:string){return /^[1-9][a-i]$/.test(usi)?{file:Number(usi[0]),rank:'abcdefghi'.indexOf(usi[1])+1}:null;}
 function draw(){
   if(!current)return;

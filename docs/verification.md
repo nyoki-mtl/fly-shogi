@@ -11,9 +11,9 @@ These checks cover software operation.
 | Full graph reconstruction | 166,700 neurons, 25,582,938 edges; exact pinned CSR hash |
 | Neutral L-BFGS-B circuit | 77,364 plastic edges, 8,374 sources; all fixed fields match the actual 30% model |
 | Neutral dopamine circuit and targeting | 61,210 plastic edges; 337 DAN target maps; all 97 MBONs covered |
-| Rust checks | 12 tests passed, including objective/runtime agreement and analytic gradient checks; formatting passed |
+| Rust checks | 14 tests passed, including repetition outcomes, objective/runtime agreement and analytic gradient checks; formatting passed |
 | Python label/reward checks | 4 tests passed; 84 generated/hand-written positions, both turns, promotions and drops; non-public teacher rejection |
-| UI build | TypeScript check, board build and 2 animation timing tests passed |
+| UI build | TypeScript check with unused locals/parameters enabled, board build and 2 animation timing tests passed |
 | Teacher preparation | Four synthetic fixtures labeled by the downloaded DL Suisho |
 | L-BFGS-B training | Cache, 3 finite-difference checks, optimization and full-circuit validation completed; final model changed 7,344 gains |
 | Dopamine training | Two training fixtures processed; 4,671 gains changed from neutral |
@@ -21,6 +21,7 @@ These checks cover software operation.
 | Evaluation | Loaded the trained model and evaluated both validation fixtures |
 | Demo API | 6 legal plies with the actual 30% model; earlier dopamine smoke/pretrained checks also passed; illegal/wrong-side actions rejected |
 | Reward consistency | Training records and demo policy probabilities matched exactly on all four fixtures |
+| Cleanup regression | Both release models produced identical moves, states, spike traces and reward predictions on three positions each; both training fixture runs produced identical final models |
 | Model immutability | Default L-BFGS-B and alternative dopamine model hashes unchanged after play |
 | Browser | Piece click, fly reply, reward, New game and both hand panels checked |
 

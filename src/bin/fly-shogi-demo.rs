@@ -3,7 +3,7 @@ use fly_shogi_lab::{encoding, lif::Graph, plasticity::Circuit};
 use rsshogi::{
     board,
     labels::policy::CompactMoveLabel,
-    types::{Color, HandPiece, Piece, Square},
+    types::{Color, HandPiece, Piece, RepetitionState, Square},
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -51,7 +51,20 @@ fn legal(p: &board::Position) -> board::Move32List {
 
 fn terminal(p: &board::Position, length: usize) -> Option<String> {
     if p.is_repetition(3) {
-        return Some(format!("Draw by repetition ({:?})", p.repetition_state()));
+        let winner = match p.repetition_state() {
+            RepetitionState::Draw => return Some("Draw by repetition".into()),
+            RepetitionState::Win => Some(p.turn()),
+            RepetitionState::Lose => Some(!p.turn()),
+            _ => None,
+        };
+        if let Some(winner) = winner {
+            let player = if winner == Color::BLACK {
+                "Human"
+            } else {
+                "Fly Meijin"
+            };
+            return Some(format!("{player} wins by perpetual-check foul"));
+        }
     }
     if legal(p).is_empty() {
         return Some(
@@ -269,4 +282,66 @@ fn main() -> Result<(), Box<dyn Error>> {
         io::stdout().flush()?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod repetition_tests {
+    use super::*;
+
+    fn play_cycle(sfen: &str, cycle: [&str; 4], expected: &str) {
+        let mut p = board::position_from_sfen(sfen).unwrap();
+        let mut moves = Vec::new();
+        for _ in 0..3 {
+            for usi in cycle {
+                assert_eq!(terminal(&p, moves.len()), None);
+                let mv = *legal(&p)
+                    .iter()
+                    .find(|m| m.to_string() == usi)
+                    .expect("legal fixture move");
+                p.apply_move32(mv);
+                moves.push(usi.to_owned());
+            }
+        }
+        let state = snapshot(&p, &moves);
+        assert_eq!(state["terminal"], expected);
+        assert_eq!(state["legal"], json!([]));
+        assert_eq!(state["legal_labels"], json!([]));
+    }
+
+    #[test]
+    fn ordinary_repetition_is_a_draw_on_fourth_occurrence() {
+        play_cycle(
+            &board::hirate_position().to_sfen(None),
+            ["2h3h", "8b7b", "3h2h", "7b8b"],
+            "Draw by repetition",
+        );
+    }
+
+    #[test]
+    fn human_perpetual_check_loses_from_either_turn() {
+        play_cycle(
+            "4k4/9/5R3/9/9/9/9/9/4K4 b - 1",
+            ["4c5c", "5a4a", "5c4c", "4a5a"],
+            "Fly Meijin wins by perpetual-check foul",
+        );
+        play_cycle(
+            "4k4/9/4R4/9/9/9/9/9/4K4 w - 1",
+            ["5a4a", "5c4c", "4a5a", "4c5c"],
+            "Fly Meijin wins by perpetual-check foul",
+        );
+    }
+
+    #[test]
+    fn fly_perpetual_check_loses_from_either_turn() {
+        play_cycle(
+            "4k4/9/9/9/9/9/3r5/9/4K4 w - 1",
+            ["6g5g", "5i6i", "5g6g", "6i5i"],
+            "Human wins by perpetual-check foul",
+        );
+        play_cycle(
+            "4k4/9/9/9/9/9/4r4/9/4K4 b - 1",
+            ["5i6i", "5g6g", "6i5i", "6g5g"],
+            "Human wins by perpetual-check foul",
+        );
+    }
 }

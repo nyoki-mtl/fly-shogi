@@ -2,13 +2,6 @@
 use crate::lif::{self, Graph};
 use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Serialize)]
-pub struct Upstream {
-    pub edges: Vec<usize>,
-    pub pres: Vec<usize>,
-    pub groups: Vec<usize>,
-    pub gains: Vec<f32>,
-}
-#[derive(Deserialize, Serialize)]
 pub struct Circuit {
     pub version: String,
     pub kc: Vec<usize>,
@@ -34,10 +27,6 @@ pub struct Circuit {
     pub kc_input: bool,
     #[serde(default = "default_input_replicas", skip_serializing_if = "is_one")]
     pub kc_replicas: usize,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub kc_afferents: Vec<usize>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub upstream: Option<Upstream>,
     #[serde(default)]
     pub structured_code: bool,
 }
@@ -45,66 +34,6 @@ pub struct Circuit {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    fn margin_update_improves_teacher_score_with_fixed_spikes() {
-        let g = Graph {
-            ids: vec![1, 2, 3],
-            offsets: vec![0, 1, 2, 2],
-            targets: vec![2, 2],
-            weights: vec![3, 7],
-        };
-        let mut c = Circuit {
-            version: "kc-mbon-v2".into(),
-            sources: vec![],
-            kc: vec![0, 1],
-            mbon: vec![2],
-            edges: vec![0, 1],
-            pres: vec![0, 1],
-            groups: vec![0, 0],
-            gains: vec![1.0, 1.0],
-            samples: 0,
-            updates: 0,
-            code_seed: 73,
-            steps: 400,
-            time_bins: 1,
-            observation_start: 0,
-            categorical_input: false,
-            kc_input: false,
-            kc_replicas: 1,
-            kc_afferents: vec![],
-            upstream: None,
-            structured_code: false,
-        };
-        c.validate(&g).unwrap();
-        let wrong = (1..1496).find(|&l| c.code(l, 0) != c.code(0, 0)).unwrap();
-        let counts = vec![2, 5, 0];
-        assert_eq!(c.logits(&g, &counts)[0], 0.0);
-        assert!(c.teach(&g, &counts, 0, wrong, 0.02) > 0);
-        let scores = c.logits(&g, &counts);
-        assert!((scores[0] - scores[wrong] - 0.02).abs() < 1e-6);
-        // A correct but low-margin prediction must still be reinforced.
-        c.gains.fill(1.0);
-        c.teach(&g, &counts, 0, wrong, 0.005);
-        assert!(c.logits(&g, &counts)[0] > c.logits(&g, &counts)[wrong]);
-        assert!(c.teach_legal(&g, &counts, 0, &[0, wrong], 0.02) > 0);
-        let scores = c.logits(&g, &counts);
-        assert!((scores[0] - scores[wrong] - 0.02).abs() < 1e-6);
-        let before = c.gains.clone();
-        assert_eq!(c.teach_legal(&g, &counts, 0, &[0], 0.02), 0);
-        assert_eq!(before, c.gains);
-        c.validate(&g).unwrap();
-        c.time_bins = 4;
-        c.gains.fill(1.0);
-        let counts = vec![2, 0, 0, 0, 5, 0, 0, 0, 0, 3, 1, 0];
-        // Unequal windows and a silent window exercise shared-gain gradients.
-        let wrong = (1..1496)
-            .find(|&l| (0..4).all(|b| c.code(l, b) == -c.code(0, b)))
-            .unwrap();
-        assert!(c.teach(&g, &counts, 0, wrong, 0.02) > 0);
-        let scores = c.logits(&g, &counts);
-        assert!((scores[0] - scores[wrong] - 0.02).abs() < 1e-6);
-    }
-
     #[test]
     fn structured_code_shares_move_attributes_without_merging_labels() {
         use rsshogi::{
@@ -182,46 +111,6 @@ impl Circuit {
             crate::encoding::encode(p).to_vec()
         };
         let dim = bits.len();
-        if !self.kc_afferents.is_empty() {
-            // Fixed artificial stimulus; overlapping feature assignments are summed as events.
-            let mut events = vec![Vec::new(); self.steps];
-            let stimulus_seed = lif::mix(seed);
-            for (feature, &bit) in bits.iter().enumerate() {
-                if bit == 0 {
-                    continue;
-                }
-                let target = self.kc_afferents
-                    [(lif::mix(29 ^ feature as u64) % self.kc_afferents.len() as u64) as usize];
-                for (t, step) in events.iter_mut().enumerate() {
-                    let draw = lif::mix(
-                        stimulus_seed
-                            ^ (t as u64).wrapping_mul(0xd1342543de82ef95)
-                            ^ (feature as u64).wrapping_mul(0x9e3779b97f4a7c15),
-                    );
-                    if ((draw >> 11) as f64) * (1.0 / 9007199254740992.0) < 0.045 {
-                        step.push(target);
-                    }
-                }
-            }
-            let cfg = lif::Simulation {
-                steps: self.steps,
-                direct: self.kc_afferents.clone(),
-                active: vec![true; self.kc_afferents.len()],
-                rate_hz: 450.0,
-                seed: stimulus_seed,
-                outputs: self.mbon.clone(),
-                disconnected: false,
-                events: Some(events),
-                trace: false,
-            };
-            return lif::simulate_gains_window(
-                g,
-                &cfg,
-                Some(dense),
-                self.time_bins,
-                self.observation_start,
-            );
-        }
         if self.kc_input && self.categorical_input && self.kc_replicas > 1 {
             let map = lif::input_map(&self.kc, 29, self.kc.len());
             let mut events = vec![Vec::new(); self.steps];
@@ -304,16 +193,14 @@ impl Circuit {
     }
     pub fn validate(&self, g: &Graph) -> Result<(), String> {
         let n = self.edges.len();
-        if !["kc-mbon-v1", "kc-mbon-v2", "mbon-input-v1"].contains(&self.version.as_str())
+        if !["kc-mbon-v2", "mbon-input-v1"].contains(&self.version.as_str())
             || (self.version == "mbon-input-v1" && self.sources.is_empty())
             || self.steps == 0
             || self.steps > 2400
             || ![1, 4].contains(&self.time_bins)
             || self.observation_start >= self.steps
             || ![1, 4, 8].contains(&self.kc_replicas)
-            || (self.kc_replicas > 1
-                && (!self.kc_input || !self.categorical_input || !self.kc_afferents.is_empty()))
-            || (!self.kc_afferents.is_empty() && (self.kc_input || !self.categorical_input))
+            || (self.kc_replicas > 1 && (!self.kc_input || !self.categorical_input))
             || (self.steps - self.observation_start) % self.time_bins != 0
             || n == 0
             || self.pres.len() != n
@@ -324,7 +211,6 @@ impl Circuit {
                 .iter()
                 .chain(&self.mbon)
                 .chain(&self.sources)
-                .chain(&self.kc_afferents)
                 .any(|&i| i >= g.ids.len())
         {
             return Err("Invalid circuit".into());
@@ -349,41 +235,12 @@ impl Circuit {
                 return Err("Invalid plastic edge".into());
             }
         }
-        if let Some(u) = &self.upstream {
-            if u.edges.is_empty()
-                || u.pres.len() != u.edges.len()
-                || u.groups.len() != u.edges.len()
-                || u.gains.len() != u.edges.len()
-            {
-                return Err("Invalid upstream arrays".into());
-            }
-            for i in 0..u.edges.len() {
-                let (e, p, k) = (u.edges[i], u.pres[i], u.groups[i]);
-                if p >= g.ids.len()
-                    || e >= g.targets.len()
-                    || k >= self.kc.len()
-                    || e < g.offsets[p]
-                    || e >= g.offsets[p + 1]
-                    || g.targets[e] as usize != self.kc[k]
-                    || g.weights[e] <= 0
-                    || !u.gains[i].is_finite()
-                    || !(0.05..=3.0).contains(&u.gains[i])
-                {
-                    return Err("Invalid upstream edge".into());
-                }
-            }
-        }
         Ok(())
     }
     pub fn dense(&self, g: &Graph) -> Vec<f32> {
         let mut v = vec![1.0; g.weights.len()];
         for (&e, &gain) in self.edges.iter().zip(&self.gains) {
             v[e] = gain;
-        }
-        if let Some(u) = &self.upstream {
-            for (&e, &gain) in u.edges.iter().zip(&u.gains) {
-                v[e] = gain;
-            }
         }
         v
     }
@@ -452,117 +309,10 @@ impl Circuit {
             })
             .collect()
     }
-    /// Projected margin update on existing synapses, with spikes held constant.
-    /// Re-select the strongest legal competitor using the latest gains.
-    pub fn teach_legal(
-        &mut self,
-        g: &Graph,
-        counts: &[u32],
-        truth: usize,
-        legal: &[usize],
-        margin: f64,
-    ) -> usize {
-        assert!(legal.contains(&truth));
-        let scores = self.logits(g, counts);
-        let competitor = legal
-            .iter()
-            .copied()
-            .filter(|&l| l != truth)
-            .max_by(|&x, &y| scores[x].total_cmp(&scores[y]).then(y.cmp(&x)));
-        match competitor {
-            Some(other) => self.teach(g, counts, truth, other, margin),
-            None => {
-                self.samples += 1;
-                0
-            }
-        }
-    }
-
-    /// Projected margin update on existing synapses, with spikes held constant.
-    /// Uses the derivative of this exact decoder; does not backpropagate through LIF.
-    pub fn teach(
-        &mut self,
-        g: &Graph,
-        counts: &[u32],
-        truth: usize,
-        chosen: usize,
-        margin: f64,
-    ) -> usize {
-        self.samples += 1;
-        if truth == chosen {
-            return 0;
-        }
-        let scores = self.logits(g, counts);
-        let loss = (margin - scores[truth] + scores[chosen]).max(0.0);
-        if loss == 0.0 {
-            return 0;
-        }
-        let mut norms = vec![0.0; self.mbon.len() * self.time_bins];
-        for bin in 0..self.time_bins {
-            for i in 0..self.edges.len() {
-                norms[bin * self.mbon.len() + self.groups[i]] +=
-                    counts[bin * g.ids.len() + self.pres[i]] as f64
-                        * g.weights[self.edges[i]] as f64;
-            }
-        }
-        let signal: Vec<_> = (0..norms.len())
-            .map(|c| self.code(truth, c) - self.code(chosen, c))
-            .collect();
-        let gradients: Vec<_> = (0..self.edges.len())
-            .map(|i| {
-                (0..self.time_bins)
-                    .map(|bin| {
-                        let group = bin * self.mbon.len() + self.groups[i];
-                        if norms[group] == 0.0 {
-                            0.0
-                        } else {
-                            -(counts[bin * g.ids.len() + self.pres[i]] as f64
-                                * g.weights[self.edges[i]] as f64
-                                / norms[group])
-                                * signal[group]
-                                / (norms.len() as f64).sqrt()
-                        }
-                    })
-                    .sum::<f64>()
-            })
-            .collect();
-        let norm: f64 = gradients.iter().map(|x| x * x).sum();
-        if norm == 0.0 {
-            return 0;
-        }
-        let step = (loss / norm).min(100.0);
-        let mut changed = 0;
-        for i in 0..self.edges.len() {
-            let new = (self.gains[i] as f64 + step * gradients[i]).clamp(0.05, 3.0) as f32;
-            if new != self.gains[i] {
-                changed += 1;
-                self.gains[i] = new;
-            }
-        }
-        if changed > 0 {
-            self.updates += 1;
-        }
-        changed
-    }
     pub fn info(&self) -> serde_json::Value {
-        let upstream_edges = self.upstream.as_ref().map_or(0, |u| u.edges.len());
-        let upstream_changed = self
-            .upstream
-            .as_ref()
-            .map_or(0, |u| u.gains.iter().filter(|&&v| v != 1.0).count());
-        let plastic_sources = self.upstream.as_ref().map_or_else(
-            || self.source_neurons().len(),
-            |u| {
-                self.source_neurons()
-                    .iter()
-                    .chain(&u.pres)
-                    .collect::<std::collections::HashSet<_>>()
-                    .len()
-            },
-        );
-        serde_json::json!({"method":self.version,"positions":self.samples,"updates":self.updates,"plastic_edges":self.edges.len()+upstream_edges,"changed_edges":self.gains.iter().filter(|&&v|v!=1.0).count()+upstream_changed,"upstream_edges":upstream_edges,"plastic_targets":if upstream_edges>0 {"KCとMBON"} else {"MBON"},"kc":self.kc.len(),"plastic_sources":plastic_sources,"mbon":self.mbon.len(),"duration_ms":self.steps as f64*0.1,"observation_start_ms":self.observation_start as f64*0.1,"time_bins":self.time_bins,"structured_code":self.structured_code,
+        serde_json::json!({"method":self.version,"positions":self.samples,"updates":self.updates,"plastic_edges":self.edges.len(),"changed_edges":self.gains.iter().filter(|&&v|v!=1.0).count(),"plastic_targets":"MBON","kc":self.kc.len(),"plastic_sources":self.source_neurons().len(),"mbon":self.mbon.len(),"duration_ms":self.steps as f64*0.1,"observation_start_ms":self.observation_start as f64*0.1,"time_bins":self.time_bins,"structured_code":self.structured_code,
             "input_dimensions":if self.categorical_input {crate::encoding::CATEGORICAL_DIM} else {crate::encoding::DIM},
-            "input_replicas":if self.kc_input && self.categorical_input {self.kc_replicas} else if !self.kc_afferents.is_empty() {1} else {2},
-            "input_target":if !self.kc_afferents.is_empty() {"KCの上流ニューロン"} else if self.kc_input {"KC"} else {"感覚ニューロン"}})
+            "input_replicas":if self.kc_input && self.categorical_input {self.kc_replicas} else {2},
+            "input_target":if self.kc_input {"KC"} else {"感覚ニューロン"}})
     }
 }

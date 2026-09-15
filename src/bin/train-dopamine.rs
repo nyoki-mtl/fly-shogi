@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let pools: Pools = serde_json::from_slice(&fs::read(&a[2])?)?;
     let mut c: Circuit = serde_json::from_slice(&fs::read(&a[3])?)?;
     c.validate(&g)?;
-    if c.upstream.is_some() || !c.sources.is_empty() {
+    if !c.sources.is_empty() {
         return Err("Requires KC-only plastic synapses".into());
     }
     let channels: Vec<Channel> = serde_json::from_slice(&fs::read(&a[4])?)?;

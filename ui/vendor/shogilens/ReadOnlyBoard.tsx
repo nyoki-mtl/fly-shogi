@@ -32,7 +32,7 @@ interface ReadOnlyBoardProps {
 }
 
 const NOOP = (): void => undefined;
-const NOOP_PIECE_CLICK = (_pieceType: string): void => undefined;
+
 const NOOP_PIECE_POINTER = (_pieceType: string, _event: unknown): void => undefined;
 
 function findPiece(board: PositionData["board"], file: number, rank: number): PieceData | null {
