@@ -18,7 +18,8 @@ to the data representation and model.
 
 | Component | Source | Terms and use |
 | --- | --- | --- |
-| Board, both hand panels, pieces | [Included ShogiLens source](../ui/vendor/shogilens/), revision `5b508c3b39fdad12ba8f6c0e1a74ade7a8fdb4f0` | MIT; copied/adapted sources and 28 original piece images. Notices in `web/vendor/shogilens/`. |
+| Board and both hand panels | [Included ShogiLens source](../ui/vendor/shogilens/), revision `5b508c3b39fdad12ba8f6c0e1a74ade7a8fdb4f0` | MIT; copied/adapted board sources. Notices in `web/vendor/shogilens/`. |
+| Hitomoji piece images | [sunfish-shogi/shogi-images](https://github.com/sunfish-shogi/shogi-images) | CC0 1.0 Universal; 28 PNGs distributed via ShogiLens. [Source and license](../web/pieces/hitomoji/README.md). |
 | Rules and move labels | [rsshogi 1.2.4](https://crates.io/crates/rsshogi/1.2.4) | MIT; pinned Cargo dependency. |
 | Teacher feature encoder | [cshogi 1.0.4](https://github.com/TadaoYamaoka/cshogi) | GPL-3.0; Python dependency, used for dlshogi features and an independent label check. |
 | UI runtime | React, React DOM | MIT; license texts retained in `web/vendor/shogilens/`. Sources are built with the pinned npm lockfile. |

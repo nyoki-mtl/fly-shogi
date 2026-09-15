@@ -42,5 +42,5 @@ The default teacher temperature is 1.0; set the same `--temperature` for
 `prepare_teacher.py` and `serve_demo.py`. Teacher-data manifests store
 its hash, temperature and output hash.
 
-The fly selects its move using its saved synaptic gains. The teacher then
+The fly selects its move using its saved synaptic gains. DL Suisho then
 computes external feedback for that move. During play, gains remain fixed.

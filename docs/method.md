@@ -57,7 +57,7 @@ argmax and cross-entropy provide diagnostics for this local learning rule.
 ## Visualization
 
 Neural glow displays simulated spike counts at sampled soma coordinates.
-Nectar fills in proportion to the teacher probability for the selected move;
+Nectar fills in proportion to DL Suisho's probability for the selected move;
 a particle travels to the brain, followed by a gold wave. These are illustrations
 of external reward. The saved gains remain fixed during play.
 

@@ -7,8 +7,6 @@ Play shogi against a spiking neural model built on the MaleCNS fly connectome.
 Two versions are available: one optimizes existing mushroom body output neuron
 (MBON) input connections with L-BFGS-B; the other updates KC-to-MBON connections
 through dopamine-inspired local learning. L-BFGS-B is the default.
-Its teacher move agreement was **30.27%** on development positions and **26.39%**
-on previously unused games checked after selection.
 
 ## Setup
 
@@ -42,7 +40,7 @@ A gold wave illustrates the external reward reaching the brain.
 ## Training
 
 Use tayayan's [DL Suisho 15b](https://drive.google.com/file/d/11e9-IhuUmZ68LaWE00m-_HFacsz8RgAX/view)
-([distribution announcement](https://www.youtube.com/watch?v=Z-wpDN-mBHI)).
+([original explainer video](https://www.youtube.com/watch?v=Z-wpDN-mBHI)).
 Extract `DLSuisho15b/eval/model.onnx` to `models/dl-suisho/model.onnx`.
 
 Supply your own positions as JSON Lines, with `sfen`, `split` (`train` or
@@ -71,7 +69,7 @@ Continue with `--initial PATH --output NEW_DIRECTORY`.
 ### Dopamine-inspired local learning
 
 Use the same teacher data to update 61,210 KC-to-MBON connections, with the
-teacher's probability for the sampled move as the reward.
+DL Suisho's probability for the sampled move as the reward.
 
 ```sh
 uv run --locked python scripts/prepare_circuit.py --method dopamine --output work_dir/dopamine-circuit
@@ -106,3 +104,4 @@ node --test tests/brain_timing.test.cjs
 - Shiu et al. (2024), [A Drosophila computational brain model reveals sensorimotor processing](https://doi.org/10.1038/s41586-024-07763-9), *Nature*: a reference for spiking dynamics, alongside the [authors' implementation](https://github.com/philshiu/Drosophila_brain_model).
 - Handler et al. (2019), [Distinct Dopamine Receptor Pathways Underlie the Temporal Sensitivity of Associative Learning](https://doi.org/10.1016/j.cell.2019.05.040), *Cell*: background for stimulus/reward timing.
 - [Doomfly](https://github.com/nftechie/doomfly): a reference when considering data conversion and numerical implementation, and a cross-check for input file hashes.
+- [shogi-images](https://github.com/sunfish-shogi/shogi-images): hitomoji piece images ([CC0 1.0](web/pieces/hitomoji/LICENSE)).

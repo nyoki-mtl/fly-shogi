@@ -8,7 +8,6 @@ https://github.com/user-attachments/assets/c0ad55f8-f49c-4d77-b448-cada76cee129
 
 キノコ体出力ニューロン（MBON）に入る既存の結合重みをL-BFGS-Bで最適化したバージョンと、ドーパミンによる可塑性を模した局所学習でKCからMBONへの結合重みを更新したバージョンの2種類を用意しています。
 デフォルトはL-BFGS-B版です。
-L-BFGS-B版が教師と同じ手を選んだ割合は、開発用局面で**30.27%**、採用後に確認した別棋譜で**26.39%**でした。
 
 ## セットアップ
 
@@ -40,7 +39,7 @@ uv run --locked python scripts/serve_demo.py --model models/fly-meijin.json --te
 
 ## 学習
 
-教師モデルには、たややん氏の[DL水匠15b](https://drive.google.com/file/d/11e9-IhuUmZ68LaWE00m-_HFacsz8RgAX/view)を使います（[配布案内](https://www.youtube.com/watch?v=Z-wpDN-mBHI)）。
+教師モデルには、たややん氏の[DL水匠15b](https://drive.google.com/file/d/11e9-IhuUmZ68LaWE00m-_HFacsz8RgAX/view)を使います（[オリジナルの解説動画](https://www.youtube.com/watch?v=Z-wpDN-mBHI)）。
 ZIP内の`DLSuisho15b/eval/model.onnx`を`models/dl-suisho/model.onnx`へ配置してください。
 
 学習する局面は利用者が用意します。
@@ -70,7 +69,7 @@ uv run --locked python scripts/evaluate.py --model work_dir/lbfgs-training/final
 ### ドーパミンを模した局所学習
 
 同じ教師データを使い、61,210本のKCからMBONへの結合を更新します。
-選んだ手に教師が割り当てた確率を報酬に使います。
+選んだ手にDL水匠が割り当てた確率を報酬に使います。
 
 ```sh
 uv run --locked python scripts/prepare_circuit.py --method dopamine --output work_dir/dopamine-circuit
@@ -107,3 +106,4 @@ node --test tests/brain_timing.test.cjs
 - Handler et al. (2019), [Distinct Dopamine Receptor Pathways Underlie the Temporal Sensitivity of Associative Learning](https://doi.org/10.1016/j.cell.2019.05.040), *Cell*：刺激とドーパミンの時間関係を考える際の参考研究です。
 - [Doomfly](https://github.com/nftechie/doomfly)：データ変換と数値実装を検討する際に参照しました。
   入力ファイルのハッシュを照合する参考にもしています。
+- [shogi-images](https://github.com/sunfish-shogi/shogi-images)：hitomoji駒画像（[CC0 1.0](web/pieces/hitomoji/LICENSE)）。
