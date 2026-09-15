@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Fly Shogi</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css">
+  <script src="shogilens-board.js" defer></script><script src="brain.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+<main>
+  <div class="stage" id="stage">
+    <section class="brain-panel" aria-label="Fly brain activity">
+      <canvas id="brain" aria-label="Fly brain activity"></canvas><div class="brain-empty" id="brain-empty"></div>
+      <div class="reward" id="reward" role="meter" aria-label="External reward" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="reward-label"><span>External reward</span><output id="reward-value">—</output></div>
+      </div>
+    </section>
+    <section class="game-panel" aria-label="Shogi game"><div id="shogilens-board"></div></section>
+  </div>
+  <nav class="transport" aria-label="Game controls"><button id="reset">New game</button></nav>
+  <div id="status" role="status" aria-live="polite"></div>
+</main>
+<dialog id="promotion"><button id="promote-yes">Promote</button><button id="promote-no">Keep piece</button><button id="promote-cancel" aria-label="Cancel">×</button></dialog>
+</body>
+</html>

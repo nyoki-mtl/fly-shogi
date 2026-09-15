@@ -1,0 +1,1 @@
+{"private":true,"scripts":{"build:board":"node scripts/build_board.mjs"},"dependencies":{"react":"19.2.4","react-dom":"19.2.4"},"devDependencies":{"@types/react":"19.2.14","@types/react-dom":"19.2.3","esbuild":"0.25.12","typescript":"5.9.3"}}

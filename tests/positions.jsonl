@@ -1,0 +1,4 @@
+{"sfen":"lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1","split":"train","seed":101}
+{"sfen":"lnsgkgsnl/1r5b1/ppppppppp/9/9/2P6/PP1PPPPPP/1B5R1/LNSGKGSNL w - 2","split":"train","seed":102}
+{"sfen":"4k4/9/4P4/9/9/9/9/9/4K4 b R2P2p 1","split":"validation","seed":103}
+{"sfen":"4k4/9/9/9/9/9/4p4/9/4K4 w 2Pr2p 1","split":"validation","seed":104}

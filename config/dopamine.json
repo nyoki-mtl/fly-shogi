@@ -1,0 +1,13 @@
+{
+  "early_amplitude_factor": 1.0,
+  "anneal_samples": 10000.0,
+  "checkpoint_every": 2048,
+  "saturate_trace": true,
+  "reward_trials": 64,
+  "center_action_tag": true,
+  "temporal_credit": true,
+  "normalize_dopamine": true,
+  "local_competition": true,
+  "predict_reward": true,
+  "resume_local": false
+}

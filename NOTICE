@@ -1,0 +1,18 @@
+Fly Meijin
+Copyright (c) 2026 nyoki-mtl
+
+Project code is licensed under the GNU General Public License, version 3 only
+(GPL-3.0-only), except third-party files retaining their own notices. See LICENSE.
+
+This package includes adapted ShogiLens board components and original piece
+images, and browser bundles of React and React DOM. Their MIT
+licenses and modification notes are in web/vendor/shogilens/.
+
+MaleCNS biological data is by FlyEM and collaborators, under CC BY 4.0:
+https://male-cns.janelia.org/
+https://creativecommons.org/licenses/by/4.0/
+See docs/attribution.md for processing changes. Data is obtained separately.
+
+DL Suisho model weights are obtained separately from their author and are not
+covered by the license of this project's source code. Optional trained fly
+weights have separate release status described in docs/model-card.md.

@@ -1,0 +1,15 @@
+[project]
+name = "fly-meijin"
+version = "0.1.0"
+description = "A MaleCNS shogi demo with L-BFGS-B and dopamine-inspired synaptic learning"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "cshogi==1.0.4",
+    "numpy>=2.2,<3",
+    "onnxruntime>=1.30,<2",
+    "pyarrow>=20,<24",
+    "scipy>=1.16,<2",
+]
+
+[tool.uv]
+package = false
