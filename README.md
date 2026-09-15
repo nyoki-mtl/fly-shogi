@@ -3,19 +3,16 @@
 [English README](README_en.md)
 
 ショウジョウバエの神経接続データ「MaleCNS」を使った、将棋を指すスパイキング神経モデルです。
-神経活動を眺めながら対局でき、着手に対する外部報酬を蜜の量で表示します。
 
 https://github.com/user-attachments/assets/c0ad55f8-f49c-4d77-b448-cada76cee129
 
-標準モデルは、キノコ体出力ニューロン（MBON）に入る既存の結合重みをL-BFGS-Bで最適化しています。
-教師と同じ手を選んだ割合は、開発用局面で**30.27%**、採用後に確認した別棋譜で**26.39%**でした。
-学習コードはL-BFGS-B方式と、ドーパミンによる可塑性を模した局所学習方式を用意しています。
+キノコ体出力ニューロン（MBON）に入る既存の結合重みをL-BFGS-Bで最適化したバージョンと、ドーパミンによる可塑性を模した局所学習でKCからMBONへの結合重みを更新したバージョンの2種類を用意しています。
+デフォルトはL-BFGS-B版です。
+L-BFGS-B版が教師と同じ手を選んだ割合は、開発用局面で**30.27%**、採用後に確認した別棋譜で**26.39%**でした。
 
 ## セットアップ
 
-[Rust](https://rustup.rs/)、[uv](https://docs.astral.sh/uv/)、[Node.js 22以降](https://nodejs.org/)を用意してください。
-WindowsではMSVCのC++ビルドツールを使います。
-Python 3.13はuvで管理し、推論はCPUで動作します。
+[Rust](https://rustup.rs/)、[uv](https://docs.astral.sh/uv/)、[Node.js 22以降](https://nodejs.org/)が必要です。
 
 ```sh
 uv sync --locked
@@ -24,9 +21,6 @@ npm run build:board
 uv run --locked python scripts/download_data.py
 uv run --locked python scripts/prepare_graph.py
 ```
-
-MaleCNSのデータ約1.11 GBを取得し、約207 MBのグラフを作ります。
-メモリとディスクにそれぞれ数GB以上の空きを確保してください。
 
 ## 対局
 
@@ -38,9 +32,7 @@ MaleCNSのデータ約1.11 GBを取得し、約207 MBのグラフを作ります
 uv run --locked python scripts/serve_demo.py --model models/fly-meijin.json --teacher models/dl-suisho/model.onnx
 ```
 
-[http://127.0.0.1:8765/](http://127.0.0.1:8765/)を開きます。
-手前の先手が**Human**、奥の後手が**Fly Meijin**です。
-駒と移動先をクリックして着手し、**New game**で初期局面に戻ります。
+[http://127.0.0.1:8765/](http://127.0.0.1:8765/)でデモが立ち上がります。
 
 神経の発光はシミュレーションの発火数を表示します。
 蜜の量と**External reward**は、その手にDL水匠が割り当てた確率に対応します。
@@ -54,9 +46,10 @@ ZIP内の`DLSuisho15b/eval/model.onnx`を`models/dl-suisho/model.onnx`へ配置�
 学習する局面は利用者が用意します。
 JSON Lines形式で、各行に`sfen`、`split`（`train`または`validation`）、任意の整数`seed`（既定値101）を指定します。
 学習用と検証用は対局単位で分けます。
-以下は、同梱の4局面を使う動作確認の手順です。
+入力例は[tests/positions.jsonl](tests/positions.jsonl)にあります。
+以下は、このサンプルに含まれる4局面を使う動作確認の手順です。
 
-### L-BFGS-B（標準）
+### L-BFGS-B
 
 ```sh
 uv run --locked python scripts/prepare_circuit.py
@@ -73,7 +66,6 @@ uv run --locked python scripts/evaluate.py --model work_dir/lbfgs-training/final
 `final.json`が最終モデル、`best.json`が検証成績で選んだモデルです。
 `best.json`は全回路でも再評価し、結果を`full-validation.json`へ保存します。
 追加学習は`--initial PATH --output NEW_DIRECTORY`で指定できます。
-活動キャッシュは50万局面で約16.75 GBとなり、ディスクとメモリの両方に作業領域が必要です。
 
 ### ドーパミンを模した局所学習
 

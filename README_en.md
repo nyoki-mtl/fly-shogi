@@ -3,18 +3,17 @@
 [日本語 README](README.md)
 
 Play shogi against a spiking neural model built on the MaleCNS fly connectome.
-Watch neural activity and a nectar display proportional to an external reward.
 
-The default model optimizes existing MBON input connections with L-BFGS-B.
-Teacher move agreement was **30.27%** on development positions and **26.39%**
-on previously unused games checked after selection. Training code supports
-both L-BFGS-B and dopamine-inspired local learning.
+Two versions are available: one optimizes existing mushroom body output neuron
+(MBON) input connections with L-BFGS-B; the other updates KC-to-MBON connections
+through dopamine-inspired local learning. L-BFGS-B is the default.
+Its teacher move agreement was **30.27%** on development positions and **26.39%**
+on previously unused games checked after selection.
 
 ## Setup
 
-Install [Rust](https://rustup.rs/), [uv](https://docs.astral.sh/uv/), and
-[Node.js 22+](https://nodejs.org/). Windows requires MSVC C++ build tools.
-Python 3.13 is managed by uv. Inference runs on the CPU.
+[Rust](https://rustup.rs/), [uv](https://docs.astral.sh/uv/), and
+[Node.js 22+](https://nodejs.org/) are required.
 
 ```sh
 uv sync --locked
@@ -23,9 +22,6 @@ npm run build:board
 uv run --locked python scripts/download_data.py
 uv run --locked python scripts/prepare_graph.py
 ```
-
-This downloads about 1.11 GB of MaleCNS data and builds a 207 MB graph.
-Allow several GB of free memory and disk space.
 
 ## Play
 
@@ -37,9 +33,7 @@ and save it as `models/fly-meijin.json`. Obtain DL Suisho as described under
 uv run --locked python scripts/serve_demo.py --model models/fly-meijin.json --teacher models/dl-suisho/model.onnx
 ```
 
-Open [localhost:8765](http://127.0.0.1:8765/). **Human** plays the near side
-and **Fly Meijin** the far side. Click a piece and its destination to move.
-**New game** resets the board.
+The demo runs at [localhost:8765](http://127.0.0.1:8765/).
 
 Neural glow displays simulated spike counts. The nectar amount and
 **External reward** show DL Suisho's probability for the fly's chosen move.
@@ -53,9 +47,10 @@ Extract `DLSuisho15b/eval/model.onnx` to `models/dl-suisho/model.onnx`.
 
 Supply your own positions as JSON Lines, with `sfen`, `split` (`train` or
 `validation`), and an optional integer `seed` (default 101). Split by game.
-The following commands use four included positions for an installation check.
+See [tests/positions.jsonl](tests/positions.jsonl) for sample input.
+The following commands use its four positions for an installation check.
 
-### L-BFGS-B (default)
+### L-BFGS-B
 
 ```sh
 uv run --locked python scripts/prepare_circuit.py
@@ -71,8 +66,7 @@ Choose a new `--output` directory for each run.
 
 `final.json` is the last model; `best.json` is selected by validation performance.
 The selected model is also evaluated with the full circuit in `full-validation.json`.
-Continue with `--initial PATH --output NEW_DIRECTORY`. The activity cache takes
-about 16.75 GB for 500,000 positions and requires both disk and RAM working space.
+Continue with `--initial PATH --output NEW_DIRECTORY`.
 
 ### Dopamine-inspired local learning
 
